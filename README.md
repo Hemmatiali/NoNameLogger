@@ -18,6 +18,39 @@ This makes your logging:
 
 ---
 
+## Table of Contents
+
+- [1. Project Structure](#1-project-structure)
+  - [1.1 Abstractions](#11-abstractions)
+  - [1.2 Context](#12-context)
+  - [1.3 Core](#13-core)
+  - [1.4 Conventions](#14-conventions)
+  - [1.5 Enricher](#15-enricher)
+  - [1.6 Samples](#16-samples)
+- [2. Requirements](#2-requirements)
+- [3. Getting Started](#3-getting-started)
+  - [3.1 Installation](#31-installation)
+  - [3.2 Basic context and fluent logging](#32-basic-context-and-fluent-logging)
+  - [3.3 Using shortcut extension methods](#33-using-shortcut-extension-methods)
+  - [3.4 Timed operations](#34-timed-operations)
+  - [3.5 Ambient logging context (LoggingScope)](#35-ambient-logging-context)
+- [4. Architecture](#4-architecture)
+  - [4.1 State Object and Structured Logging](#41-state-object-and-structured-logging)
+  - [4.2 Performance Considerations](#42-performance-considerations)
+- [5. Extending the Framework](#5-extending-the-framework)
+  - [5.1 Project-Specific Context Helpers](#51-project-specific-context-helpers)
+  - [5.2 Project-Specific Events and Messages](#52-project-specific-events-and-messages)
+  - [5.3 Custom Wrappers](#53-custom-wrappers)
+- [6. Integration with Serilog](#6-integration-with-serilog)
+  - [6.1 Basic Setup](#61-basic-setup)
+  - [6.2 Using Enrichers](#62-using-enrichers)
+- [7. Best Practices](#7-best-practices)
+- [8. Troubleshooting](#8-troubleshooting)
+- [9. Contributing](#9-contributing)
+- [10. Summary](#10-summary)
+
+---
+
 ## 1. Project Structure
 
 The library is organized into a few small namespaces and files:
@@ -596,7 +629,59 @@ The `LoggingScopeEnricher` automatically enriches all log events with properties
 
 ---
 
-## 9. Summary
+## 9. Contributing
+
+We welcome contributions! Please follow these guidelines when submitting changes.
+
+### Commit Message Format
+
+All commit messages must follow the conventional commits format:
+
+```
+<type>(<scope>): <description>
+```
+
+#### Commit Types
+
+* **`feat()`**: New features or functionality
+  * Example: `feat(logging): add ambient context support via LoggingScope`
+
+* **`fix()`**: Bug fixes
+  * Example: `fix(builder): correct context merging when explicit context is null`
+
+* **`refactor()`**: Code refactoring without changing functionality
+  * Example: `refactor(core): simplify LogEntryBuilder state construction`
+
+* **`performance()`**: Performance improvements
+  * Example: `performance(context): use FrozenDictionary for better lookup performance`
+
+* **`chore()`**: Maintenance tasks, dependencies, build configuration
+  * Example: `chore(deps): update Microsoft.Extensions.Logging to 9.0.0`
+
+#### Scope (Optional)
+
+The scope should indicate the area of the codebase affected:
+- `logging`, `context`, `builder`, `enricher`, `core`, `conventions`, `samples`, `deps`, `docs`, etc.
+
+#### Description
+
+- Use imperative mood ("add" not "added" or "adds")
+- Keep it concise but descriptive
+- Reference issues/PRs if applicable
+
+#### Examples
+
+```
+feat(enricher): add LoggingScopeEnricher for automatic context enrichment
+fix(context): handle null context in GetEffectiveContext
+refactor(core): extract state building logic to separate method
+performance(context): optimize property lookup with FrozenDictionary
+chore(docs): update README with enricher documentation
+```
+
+---
+
+## 10. Summary
 
 NoNameLogger enhances your existing logging infrastructure by providing:
 
