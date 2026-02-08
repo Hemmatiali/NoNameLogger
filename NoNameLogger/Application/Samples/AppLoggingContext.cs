@@ -5,7 +5,7 @@ namespace NoNameLogger.Application.Samples;
 
 public static class AppLoggingContext
 {
-    private const string ApplicationName = "MyProjectName"; // Name of the application
+    private const string ApplicationName = "NoNameLogger.Samples"; // Name of the application
 
     /// <summary>
     /// Creates an ILoggingContext with application, service and operation.
