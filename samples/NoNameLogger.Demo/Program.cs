@@ -17,17 +17,20 @@ Microsoft.Extensions.Logging.ILogger logger =
 
 logger.LogInformation("Demo started.");
 
-RunThreeCoreSamples(logger);
+RunAllSamples(logger);
 
 await RunControllerSampleAsync(loggerFactory);
 
 logger.LogInformation("Demo finished.");
 
-void RunThreeCoreSamples(Microsoft.Extensions.Logging.ILogger loggerParameter)
+void RunAllSamples(Microsoft.Extensions.Logging.ILogger loggerParameter)
 {
     LoggingSamples.BasicUsage(loggerParameter);
     LoggingSamples.TimedOperationSample(loggerParameter);
     LoggingSamples.AmbientContextExample(loggerParameter);
+    LoggingSamples.ErrorHandlingExample(loggerParameter);
+    LoggingSamples.HttpRequestExample(loggerParameter, method: "GET", path: "/api/values");
+    LoggingSamples.DatabaseOperationExample(loggerParameter, commandText: "SELECT TOP (1) * FROM SampleTable");
 }
 
 async Task RunControllerSampleAsync(ILoggerFactory loggerFactoryParameter)
@@ -35,6 +38,7 @@ async Task RunControllerSampleAsync(ILoggerFactory loggerFactoryParameter)
     var controllerLogger = loggerFactoryParameter.CreateLogger<SampleController>();
     var controller = new SampleController(controllerLogger);
 
+    // 1) Valid request
     var request = new SampleRequest
     {
         PropertyId = "P-1001",
@@ -43,4 +47,7 @@ async Task RunControllerSampleAsync(ILoggerFactory loggerFactoryParameter)
     };
 
     _ = await controller.ProcessRequestAsync(request);
+
+    // 2) Null request (shows validation + warning path)
+    _ = await controller.ProcessRequestAsync(null);
 }
