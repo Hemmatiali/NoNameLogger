@@ -1,5 +1,8 @@
 using Microsoft.Extensions.Logging;
 using NoNameLogger.Demo.Samples;
+using NoNameLogger.Demo.Samples.Controllers;
+using NoNameLogger.Demo.Samples.Models.cs;
+using NoNameLogger.Demo.Samples.Services;
 using Serilog;
 using Serilog.Extensions.Logging;
 
