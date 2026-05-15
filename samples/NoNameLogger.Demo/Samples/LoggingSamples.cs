@@ -1,5 +1,4 @@
-﻿#if DEBUG
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using NoNameLogger.Application.Logging.Context;
@@ -426,4 +425,3 @@ public class LoggingSamples
         }
     }
 }
-#endif

@@ -23,16 +23,16 @@ await RunControllerSampleAsync(loggerFactory);
 
 logger.LogInformation("Demo finished.");
 
-void RunThreeCoreSamples(Microsoft.Extensions.Logging.ILogger logger)
+void RunThreeCoreSamples(Microsoft.Extensions.Logging.ILogger loggerParameter)
 {
-    LoggingSamples.BasicUsage(logger);
-    LoggingSamples.TimedOperationSample(logger);
-    LoggingSamples.AmbientContextExample(logger);
+    LoggingSamples.BasicUsage(loggerParameter);
+    LoggingSamples.TimedOperationSample(loggerParameter);
+    LoggingSamples.AmbientContextExample(loggerParameter);
 }
 
-async Task RunControllerSampleAsync(ILoggerFactory loggerFactory)
+async Task RunControllerSampleAsync(ILoggerFactory loggerFactoryParameter)
 {
-    var controllerLogger = loggerFactory.CreateLogger<SampleController>();
+    var controllerLogger = loggerFactoryParameter.CreateLogger<SampleController>();
     var controller = new SampleController(controllerLogger);
 
     var request = new SampleRequest
