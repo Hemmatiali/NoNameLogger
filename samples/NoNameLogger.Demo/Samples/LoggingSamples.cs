@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using NoNameLogger.Application.Logging.Context;
 using NoNameLogger.Application.Logging.Conventions;
 using NoNameLogger.Application.Logging.Core;
-using NoNameLogger.Application.Samples;
 
 namespace NoNameLogger.Demo.Samples;
 
@@ -185,35 +184,35 @@ public class SampleService
     }
 }
 
-public static class LoggingSamples
+public class LoggingSamples
 {
     /// <summary>
     /// Basic usage example with explicit context
     /// </summary>
     public static void BasicUsage(ILogger logger)
     {
-        var context = LoggingContextBuilder
-            .Create()
-            .WithEnvironment("Development")
-            .WithApplication("SampleApp")
-            .WithUserId("user-123")
-            .WithCorrelationId("corr-xyz")
-            .Build();
+        var context = AppLoggingContext.For<LoggingSamples>(
+            nameof(BasicUsage),
+            ("Environment", "Development"),
+            ("UserId", "user-123"),
+            ("Path", "/api/values"),
+            ("Method", "GET"));
 
-        // Fluent API example
-        logger.Log(context)
-            .Information()
-            .Event(CommonLogEvents.Http.RequestReceived)
-            .Message(CommonLogMessages.Http.RequestStarted)
-            .WithProperty("Path", "/api/values")
-            .WithProperty("Method", "GET")
-            .Write();
+        using (LoggingScope.Begin(context))
+        {
+            // Fluent API example (uses explicit context)
+            logger.Log(context)
+                .Information()
+                .Event(CommonLogEvents.Http.RequestReceived)
+                .Message("HTTP {Method} {Path} started", "GET", "/api/values")
+                .Write();
 
-        // Extension method example
-        logger.LogInformation(
-            CommonLogEvents.System.StartupCompleted,
-            CommonLogMessages.System.StartupCompleted,
-            context: context);
+            // Extension method example (uses explicit context)
+            logger.LogInformation(
+                CommonLogEvents.System.StartupCompleted,
+                "Application started",
+                context: context);
+        }
     }
 
     /// <summary>
@@ -221,33 +220,39 @@ public static class LoggingSamples
     /// </summary>
     public static void TimedOperationSample(ILogger logger)
     {
-        var context = LoggingContextBuilder
-            .Create()
-            .WithApplication("SampleApp")
-            .WithOperation("SampleOperation")
-            .Build();
+        var operationName = "SampleOperation";
 
-        // Success scenario
-        using (var op = TimedLogOperation.Start(logger, "SampleOperation", context: context))
-        {
-            // Simulate work
-            Thread.Sleep(100);
-            op.Complete(); // Logs completion with elapsed time
-        }
+        var context = AppLoggingContext.For<LoggingSamples>(
+            nameof(TimedOperationSample),
+            ("OperationName", operationName));
 
-        // Failure scenario
-        using (var op = TimedLogOperation.Start(logger, "FailingOperation", context: context))
+        using (LoggingScope.Begin(context))
         {
-            try
+            // Success scenario
+            using (var op = TimedLogOperation.Start(logger, operationName, context: context))
             {
-                // Simulate work that fails
-                Thread.Sleep(50);
-                throw new InvalidOperationException("Operation failed");
+                Thread.Sleep(100);
+                op.Complete();
             }
-            catch (Exception ex)
+
+            // Failure scenario (DO NOT crash demo)
+            using (var op = TimedLogOperation.Start(logger, "FailingOperation", context: context))
             {
-                op.Fail(ex); // Logs failure with exception and elapsed time
-                throw;
+                try
+                {
+                    Thread.Sleep(50);
+                    throw new InvalidOperationException("Operation failed");
+                }
+                catch (Exception ex)
+                {
+                    op.Fail(ex);
+
+                    // Demo-friendly: log and continue (no rethrow)
+                    logger.LogWarning(
+                        CommonLogEvents.Operation.Failed,
+                        "Failure scenario executed (expected in demo). Continuing...",
+                        context: null);
+                }
             }
         }
     }
@@ -257,35 +262,30 @@ public static class LoggingSamples
     /// </summary>
     public static void AmbientContextExample(ILogger logger)
     {
-        // Establish root context
-        var rootContext = LoggingContextBuilder
-            .Create()
-            .WithApplication("SampleApp")
-            .WithCorrelationId(Guid.NewGuid().ToString())
-            .WithUserId("user-123")
-            .Build();
+        var correlationId = Guid.NewGuid().ToString();
+
+        var rootContext = AppLoggingContext.For<LoggingSamples>(
+            nameof(AmbientContextExample),
+            ("CorrelationId", correlationId),
+            ("UserId", "user-123"));
 
         using (LoggingScope.Begin(rootContext))
         {
-            // All logging in this scope uses rootContext
+            // Ambient context used (context: null)
             logger.LogInformation(
                 CommonLogEvents.Operation.Started,
                 "Starting main operation",
-                context: null); // Ambient context used
+                context: null);
 
-            // Nested scope with additional properties
             using (LoggingScope.BeginWithProperties(("OperationId", "op-456"), ("Step", "Step1")))
             {
-                // Logs include rootContext + OperationId + Step
                 logger.LogInformation(
                     CommonLogEvents.Operation.Started,
                     "Processing step 1",
                     context: null);
 
-                // Another nested scope
                 using (LoggingScope.BeginWithProperties(("SubStep", "SubStep1")))
                 {
-                    // Logs include rootContext + OperationId + Step + SubStep
                     logger.LogDebug(
                         CommonLogEvents.Operation.Started,
                         "Processing sub-step",
@@ -293,7 +293,6 @@ public static class LoggingSamples
                 }
             }
 
-            // Back to root context only
             logger.LogInformation(
                 CommonLogEvents.Operation.Completed,
                 "Main operation completed",
