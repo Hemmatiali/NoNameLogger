@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
@@ -8,6 +8,8 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<PackageVersion>1.0.0</PackageVersion>
+	<PackageReleaseNotes>Initial public release.</PackageReleaseNotes>
 
     <!-- Package metadata -->
     <PackageId>NoNameLogger</PackageId>
