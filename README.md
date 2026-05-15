@@ -253,7 +253,7 @@ NoNameLogger
   * Helper class for creating logging contexts with application, service, and operation pre-populated.
   * Provides convenience methods `For<TService>()` and `ForBuilder<TService>()` for common patterns.
 
-* **`LoggingSamples`** (under `#if DEBUG`)
+* **`LoggingSamples`**
 
   * Contains runnable examples for basic usage and timed operations.
   * Demonstrates common patterns and integration approaches.
