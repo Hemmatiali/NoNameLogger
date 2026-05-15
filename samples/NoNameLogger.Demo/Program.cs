@@ -19,6 +19,8 @@ logger.LogInformation("Demo started.");
 
 RunAllSamples(logger);
 
+await RunServiceSampleAsync(loggerFactory);
+
 await RunControllerSampleAsync(loggerFactory);
 
 logger.LogInformation("Demo finished.");
@@ -31,6 +33,14 @@ void RunAllSamples(Microsoft.Extensions.Logging.ILogger loggerParameter)
     LoggingSamples.ErrorHandlingExample(loggerParameter);
     LoggingSamples.HttpRequestExample(loggerParameter, method: "GET", path: "/api/values");
     LoggingSamples.DatabaseOperationExample(loggerParameter, commandText: "SELECT TOP (1) * FROM SampleTable");
+}
+
+async Task RunServiceSampleAsync(ILoggerFactory loggerFactoryParameter)
+{
+    var serviceLogger = loggerFactoryParameter.CreateLogger<SampleService>();
+    var service = new SampleService(serviceLogger);
+
+    await service.ProcessDataAsync("data-001");
 }
 
 async Task RunControllerSampleAsync(ILoggerFactory loggerFactoryParameter)
