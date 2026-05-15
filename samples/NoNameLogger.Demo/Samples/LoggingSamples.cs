@@ -5,8 +5,9 @@ using Microsoft.Extensions.Logging;
 using NoNameLogger.Application.Logging.Context;
 using NoNameLogger.Application.Logging.Conventions;
 using NoNameLogger.Application.Logging.Core;
+using NoNameLogger.Application.Samples;
 
-namespace NoNameLogger.Application.Samples;
+namespace NoNameLogger.Demo.Samples;
 
 /// <summary>
 /// Sample request model for demonstration
