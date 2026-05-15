@@ -4,8 +4,10 @@ using Serilog;
 using Serilog.Extensions.Logging;
 
 global::Serilog.Log.Logger = new global::Serilog.LoggerConfiguration()
-    .MinimumLevel.Information()
-    .WriteTo.Console()
+    .MinimumLevel.Verbose()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(outputTemplate:
+        "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
     .CreateLogger();
 
 using ILoggerFactory loggerFactory = new SerilogLoggerFactory(global::Serilog.Log.Logger, dispose: true);
@@ -21,14 +23,14 @@ await RunControllerSampleAsync(loggerFactory);
 
 logger.LogInformation("Demo finished.");
 
-static void RunThreeCoreSamples(Microsoft.Extensions.Logging.ILogger logger)
+void RunThreeCoreSamples(Microsoft.Extensions.Logging.ILogger logger)
 {
     LoggingSamples.BasicUsage(logger);
     LoggingSamples.TimedOperationSample(logger);
     LoggingSamples.AmbientContextExample(logger);
 }
 
-static async Task RunControllerSampleAsync(ILoggerFactory loggerFactory)
+async Task RunControllerSampleAsync(ILoggerFactory loggerFactory)
 {
     var controllerLogger = loggerFactory.CreateLogger<SampleController>();
     var controller = new SampleController(controllerLogger);
