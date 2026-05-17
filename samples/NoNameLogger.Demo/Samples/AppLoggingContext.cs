@@ -1,7 +1,7 @@
 ﻿using NoNameLogger.Application.Logging.Abstractions;
 using NoNameLogger.Application.Logging.Context;
 
-namespace NoNameLogger.Application.Samples;
+namespace NoNameLogger.Demo.Samples;
 
 public static class AppLoggingContext
 {

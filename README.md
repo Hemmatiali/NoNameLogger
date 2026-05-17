@@ -3,18 +3,18 @@
 Lightweight, framework-agnostic logging helpers on top of `Microsoft.Extensions.Logging`.
 
 NoNameLogger does **not** replace your logging provider (Serilog, Console, Seq, Application Insights, etc.).
-Instead, it gives you:
+Instead, it provides:
 
-* A **fluent API** for building structured log entries.
-* A reusable, **immutable logging context** abstraction.
-* Centralized, strongly-typed **log events** and **message templates** (generic, not domain-specific).
-* Simple helpers for **timed operations** and common patterns.
+- A **fluent API** for building structured log entries.
+- A reusable, **immutable logging context** abstraction.
+- Centralized, strongly-typed **log events** and **message templates** (generic, not domain-specific).
+- Simple helpers for **timed operations** and common patterns.
 
 This makes your logging:
 
-* Easier to read and write.
-* More consistent across projects.
-* Safer to refactor (events/messages live in one place).
+- Easier to read and write.
+- More consistent across projects.
+- Safer to refactor (events/messages live in one place).
 
 ---
 
@@ -33,7 +33,7 @@ This makes your logging:
   - [3.2 Basic context and fluent logging](#32-basic-context-and-fluent-logging)
   - [3.3 Using shortcut extension methods](#33-using-shortcut-extension-methods)
   - [3.4 Timed operations](#34-timed-operations)
-  - [3.5 Ambient logging context (LoggingScope)](#35-ambient-logging-context)
+  - [3.5 Ambient logging context (LoggingScope)](#35-ambient-logging-context-loggingscope)
 - [4. Architecture](#4-architecture)
   - [4.1 State Object and Structured Logging](#41-state-object-and-structured-logging)
   - [4.2 Performance Considerations](#42-performance-considerations)
@@ -56,7 +56,7 @@ This makes your logging:
 The library is organized into a few small namespaces and files:
 
 ```text
-NoNameLogger
+src/NoNameLogger
 ├─ Abstractions
 │  └─ ILoggingContext.cs
 │
@@ -76,153 +76,97 @@ NoNameLogger
 │  ├─ CommonLogEvents.cs
 │  └─ CommonLogMessages.cs
 │
-├─ Enricher
-│  ├─ ConsolePropertyFilterEnricher.cs
-│  └─ LoggingScopeEnricher.cs
-│
-└─ Samples (optional, debug only)
-   ├─ AppLoggingContext.cs
-   └─ LoggingSamples.cs
+└─ Enricher
+   ├─ ConsolePropertyFilterEnricher.cs
+   └─ LoggingScopeEnricher.cs
+
+samples/NoNameLogger.Demo
+└─ Demonstrates basic usage patterns (console app)
 ```
+
+> Note: Demo and runnable samples live under `samples/` to keep the NuGet package clean and domain-agnostic.
 
 ### 1.1 Abstractions
 
-* **`ILoggingContext`**
-
-  * Immutable key/value bag that can be attached to any log entry.
-  * Exposes `IReadOnlyDictionary<string, object?> Properties` and `TryGet`.
+- **`ILoggingContext`**
+  - Immutable key/value bag that can be attached to any log entry.
+  - Exposes `IReadOnlyDictionary<string, object?> Properties` and `TryGet`.
 
 ### 1.2 Context
 
-* **`LoggingContext`**
+- **`LoggingContext`**
+  - Concrete implementation of `ILoggingContext`.
+  - Stores data internally in a `FrozenDictionary<string, object?>` for performance and thread-safety.
 
-  * Concrete implementation of `ILoggingContext`.
-  * Stores data internally in a `FrozenDictionary<string, object?>` for performance and thread-safety.
+- **`LoggingContextBuilder`**
+  - Fluent builder for constructing `LoggingContext` instances.
+  - You can add arbitrary keys via `With(key, value)` / `WithMany(...)`.
+  - Includes convenience methods for common keys:
+    - `WithEnvironment`, `WithApplication`, `WithService`, `WithMachineName`
+    - `WithUserId`, `WithUserName`, `WithTenant`
+    - `WithCorrelationId`, `WithRequestId`, `WithSessionId`
+    - `WithOperation`, `WithOperationId`
+    - `WithHttpMethod`, `WithPath`, `WithRoute`, `WithStatusCode`, `WithClientIp`
 
-* **`LoggingContextBuilder`**
+- **`LoggingContextKeys`**
+  - String constants for the well-known property names above.
+  - Helps keep keys consistent across a codebase.
 
-  * Fluent builder for constructing `LoggingContext` instances.
-  * You can add arbitrary keys via `With(key, value)` / `WithMany(...)`.
-  * Includes convenience methods for common keys:
+- **`LoggingScope`**
+  - Provides ambient (async-local) storage for `ILoggingContext`.
+  - Establish a context at the entry point of a request/job so all logs in that async flow can use it.
+  - Key members:
+    - `Current` – Gets the current ambient context (or `null` if none).
+    - `HasCurrent` – Returns `true` if an ambient context is active.
+    - `Begin(ILoggingContext context)` – Starts a new scope; returns `IDisposable` that restores the previous context on dispose.
+    - `BeginWithProperties(...)` – Starts a nested scope by adding properties to the current context.
+    - `GetEffectiveContext(ILoggingContext? explicitContext)` – Merges ambient and explicit contexts.
 
-    * `WithEnvironment`, `WithApplication`, `WithService`, `WithMachineName`
-    * `WithUserId`, `WithUserName`, `WithTenant`
-    * `WithCorrelationId`, `WithRequestId`, `WithSessionId`
-    * `WithOperation`, `WithOperationId`
-    * `WithHttpMethod`, `WithPath`, `WithRoute`, `WithStatusCode`, `WithClientIp`
-
-* **`LoggingContextKeys`**
-
-  * String constants for the well-known property names above.
-  * Helps to keep your keys consistent across the app.
-
-* **`LoggingScope`**
-
-  * Provides ambient (async-local) storage for `ILoggingContext`.
-  * Allows you to establish a logging context at the entry point of a request or job so all logging calls in that async flow automatically use the context.
-  * Key members:
-    * `Current` – Gets the current ambient context (or `null` if none).
-    * `HasCurrent` – Returns `true` if an ambient context is active.
-    * `Begin(ILoggingContext context)` – Starts a new scope; returns `IDisposable` that restores the previous context when disposed.
-    * `BeginWithProperties(...)` – Creates a new scope by adding properties to the current context.
-    * `GetEffectiveContext(ILoggingContext? explicitContext)` – Merges ambient and explicit contexts.
-
-* **`LoggingScopeExtensions`**
-
-  * Helper extension methods for working with ambient contexts:
-    * `WithProperties(...)` – Creates a new context by cloning and adding properties.
-    * `MergeWith(...)` – Merges two contexts.
-    * `BuilderFromCurrent()` – Gets a builder initialized from the current ambient context.
-    * `PushProperties(...)` – Starts a nested scope with additional properties.
+- **`LoggingScopeExtensions`**
+  - Helper extension methods for working with ambient contexts:
+    - `WithProperties(...)` – Creates a new context by cloning and adding properties.
+    - `MergeWith(...)` – Merges two contexts.
+    - `BuilderFromCurrent()` – Gets a builder initialized from the current ambient context.
+    - `PushProperties(...)` – Starts a nested scope with additional properties.
 
 ### 1.3 Core
 
-* **`LogEntryBuilder`**
+- **`LogEntryBuilder`**
+  - Fluent builder for constructing a structured log entry and writing it to `ILogger`.
+  - Lets you set:
+    - Level: `Trace`, `Debug`, `Information`, `Warning`, `Error`, `Critical`.
+    - `EventId` via `.Event(EventId)` or `.Event(int id, string? name = null)`.
+    - Message template and arguments via `.Message("...", args...)`.
+    - Exception via `.Exception(ex)`.
+    - Context via `.WithContext(ILoggingContext)`.
+    - Additional properties via `.WithProperty(key, value)` / `.WithProperties(...)`.
+  - Call `.Write()` at the end to actually log.
+  - Internally builds a `Dictionary<string, object?>` state containing:
+    - Context properties.
+    - Custom properties.
+    - The message template under `{OriginalFormat}` so providers can do structured logging.
 
-  * Fluent builder for constructing a structured log entry and writing it to `ILogger`.
-  * Lets you set:
+- **`LoggerExtensions`**
+  - Adds extensions on top of `ILogger`:
+    - `Log(this ILogger logger)` → starts a fluent `LogEntryBuilder`.
+    - `Log(this ILogger logger, ILoggingContext context)` → same, but with a context attached.
+    - Shortcut methods:
+      - `LogTrace`, `LogDebug`, `LogInformation`, `LogWarning`, `LogError`, `LogCritical`.
+      - Each takes: `EventId`, message template, optional `ILoggingContext`, optional `Exception`, optional extra properties, and `params args`.
 
-    * Level: `Trace`, `Debug`, `Information`, `Warning`, `Error`, `Critical`.
-    * `EventId` via `.Event(EventId)` or `.Event(int id, string? name = null)`.
-    * Message template and arguments via `.Message("...", args...)`.
-    * Exception via `.Exception(ex)`.
-    * Context via `.WithContext(ILoggingContext)`.
-    * Additional properties via `.WithProperty(key, value)` / `.WithProperties(...)`.
-  * Call `.Write()` at the end to actually log.
-  * Internally builds a `Dictionary<string, object?>` state that contains:
-
-    * All context properties.
-    * All custom properties.
-    * The message template under `{OriginalFormat}` so providers (like Serilog) can do structured logging.
-
-* **`LoggerExtensions`**
-
-  * Adds extensions on top of `ILogger`:
-
-    * `Log(this ILogger logger)` → starts a fluent `LogEntryBuilder`.
-    * `Log(this ILogger logger, ILoggingContext context)` → same but with a context attached.
-    * Typed helpers:
-
-      * `LogTrace`, `LogDebug`, `LogInformation`, `LogWarning`, `LogError`, `LogCritical`.
-      * Each takes:
-
-        * `EventId eventId`
-        * `string messageTemplate`
-        * optional `ILoggingContext context`
-        * optional `Exception exception`
-        * optional extra `properties` (key/value pairs)
-        * params `args` used for the message template.
-    * All of these helpers delegate to a single `LogCore` method to avoid duplication.
-
-* **`TimedLogOperation`**
-
-  * Small helper that measures an operation duration and logs start/completion/failure events.
-
-  * Usage:
-
-    ```csharp
-    using var op = TimedLogOperation.Start(
-        logger,
-        operationName: "ProcessPayment",
-        startEvent: CommonLogEvents.Operation.Started,
-        completedEvent: CommonLogEvents.Operation.Completed,
-        failedEvent: CommonLogEvents.Operation.Failed,
-        context: context);
-
-    // your code here
-
-    op.Complete();
-    ```
-
-  * If `Complete()` is called, a `Completed` event is logged with elapsed milliseconds.
-
-  * If `Fail(ex)` is called, a `Failed` event is logged with the exception.
-
-  * If only `MarkFailed()` is called and then disposed, it logs `Failed` without exception.
+- **`TimedLogOperation`**
+  - Small helper that measures operation duration and logs start/completion/failure.
 
 ### 1.4 Conventions
 
-* **`CommonLogEvents`**
+- **`CommonLogEvents`**
+  - Generic `EventId` sets grouped by category:
+    - `System`, `Http`, `Database`, `Operation`, `Cache`, `Security`, `Business`
+  - You can use them as-is or define your own equivalents.
 
-  * Generic `EventId` sets grouped by category:
-
-    * `System` (startup, shutdown, configuration, ...)
-    * `Http` (request received, completed, failed, ...)
-    * `Database` (command executing, executed, failed, ...)
-    * `Operation` (started, completed, failed)
-    * `Cache` (hit, miss, set, remove)
-    * `Security` (unauthorized, forbidden, login, suspicious activity)
-    * `Business` (validation failed, rule violated, state changed)
-  * You can:
-
-    * Use them as-is.
-    * Extend via partial classes in your own project.
-    * Ignore them and define your own events elsewhere.
-
-* **`CommonLogMessages`**
-
-  * Generic message templates matching the events above.
-  * Example:
+- **`CommonLogMessages`**
+  - Generic message templates matching the events above.
+  - Example:
 
     ```csharp
     public static class Operation
@@ -235,36 +179,30 @@ NoNameLogger
 
 ### 1.5 Enricher
 
-* **`LoggingScopeEnricher`**
+- **`LoggingScopeEnricher`**
+  - Serilog enricher that automatically adds properties from `LoggingScope.Current` to log events.
+  - Bridges ambient logging context with Serilog structured logging.
 
-  * Serilog enricher that automatically adds properties from `LoggingScope.Current` to log events.
-  * Bridges the ambient logging context with Serilog's structured logging.
-  * Excludes internal keys (`{OriginalFormat}`, `EventId`, `EventName`) to avoid duplication.
-
-* **`ConsolePropertyFilterEnricher`**
-
-  * Serilog enricher that filters out specified properties from console output.
-  * Removes common properties (`Application`, `Environment`, `SourceContext`) for cleaner console logs.
+- **`ConsolePropertyFilterEnricher`**
+  - Serilog enricher that filters out specified properties from console output.
 
 ### 1.6 Samples
 
-* **`AppLoggingContext`**
+Runnables live in `samples/NoNameLogger.Demo`.
 
-  * Helper class for creating logging contexts with application, service, and operation pre-populated.
-  * Provides convenience methods `For<TService>()` and `ForBuilder<TService>()` for common patterns.
-
-* **`LoggingSamples`** (under `#if DEBUG`)
-
-  * Contains runnable examples for basic usage and timed operations.
-  * Demonstrates common patterns and integration approaches.
+- Demonstrates:
+  - explicit context + fluent logging
+  - ambient context via `LoggingScope`
+  - timed operations
+  - error handling patterns
 
 ---
 
 ## 2. Requirements
 
-* **.NET**: .NET 6.0 or later
-* **Dependencies**: `Microsoft.Extensions.Logging.Abstractions`
-* **Providers**: Compatible with any logging provider that integrates with `ILogger` (Serilog, NLog, Application Insights, Seq, etc.)
+- **.NET**: .NET 6.0 or later
+- **Dependency**: `Microsoft.Extensions.Logging.Abstractions`
+- **Providers**: Works with any provider that integrates with `ILogger` (Serilog, NLog, Seq, Application Insights, etc.)
 
 NoNameLogger extends `ILogger` without replacing your existing logging infrastructure.
 
@@ -274,7 +212,11 @@ NoNameLogger extends `ILogger` without replacing your existing logging infrastru
 
 ### 3.1 Installation
 
-Add a project reference or install the NuGet package into your application.
+Install the NuGet package:
+
+```bash
+dotnet add package NoNameLogger
+```
 
 Required namespaces:
 
@@ -328,9 +270,7 @@ _logger.LogInformation(
     context: context);
 ```
 
-All levels (`Trace`, `Debug`, `Information`, `Warning`, `Error`, `Critical`) have the same signature.
-
-You can also attach extra properties directly:
+You can attach extra properties directly:
 
 ```csharp
 _logger.LogError(
@@ -359,9 +299,7 @@ public async Task ProcessPaymentAsync(ILoggingContext context)
 
     try
     {
-        // your logic
         await Task.Delay(250);
-
         op.Complete();
     }
     catch (Exception ex)
@@ -372,20 +310,13 @@ public async Task ProcessPaymentAsync(ILoggingContext context)
 }
 ```
 
-This will produce:
-
-* A "started" log when the operation begins.
-* A "completed" log with elapsed milliseconds on success.
-* A "failed" log with elapsed time and error message on failure.
-
 ### 3.5 Ambient logging context (LoggingScope)
 
-Instead of passing `ILoggingContext` through every method, you can establish an **ambient context** at the entry point of a request or job. All logging calls within that async flow will automatically use the context.
+Instead of passing `ILoggingContext` through every method, establish an **ambient context** at the entry point of a request/job.
 
-#### Starting a scope at the entry point
+#### Starting a scope
 
 ```csharp
-// In a controller action, middleware, or background job entry point:
 public async Task<IActionResult> GetOrderAsync(string orderId)
 {
     var context = LoggingContextBuilder
@@ -398,9 +329,6 @@ public async Task<IActionResult> GetOrderAsync(string orderId)
 
     using (LoggingScope.Begin(context))
     {
-        // All logging in this block (and any async calls) will automatically
-        // include the context properties without passing context explicitly.
-        
         return await _orderService.GetOrderAsync(orderId);
     }
 }
@@ -408,76 +336,22 @@ public async Task<IActionResult> GetOrderAsync(string orderId)
 
 #### Logging without passing context
 
-Once a scope is active, logging methods automatically pick up the ambient context:
-
 ```csharp
-public class OrderService
-{
-    private readonly ILogger<OrderService> _logger;
-
-    public async Task<Order> GetOrderAsync(string orderId)
-    {
-        // No need to accept ILoggingContext as a parameter!
-        // The ambient context is used automatically.
-        
-        _logger.Log()
-            .Information()
-            .Event(CommonLogEvents.Operation.Started)
-            .Message("Fetching order {OrderId}", orderId)
-            .Write();
-
-        // ... fetch order ...
-
-        return order;
-    }
-}
+_logger.Log()
+    .Information()
+    .Event(CommonLogEvents.Operation.Started)
+    .Message("Fetching order {OrderId}", orderId)
+    .Write();
 ```
 
 #### Adding extra properties in nested calls
 
-Lower-level services can add extra properties to the current context without rebuilding everything:
-
 ```csharp
-public async Task<InventoryStatus> CheckInventoryAsync(string productId)
+using (LoggingScope.BeginWithProperties(("ProductId", productId)))
 {
-    // Option 1: Use BeginWithProperties to start a nested scope with extra properties
-    using (LoggingScope.BeginWithProperties(("ProductId", productId)))
-    {
-        _logger.LogInformation(
-            CommonLogEvents.Operation.Started,
-            "Checking inventory for product {ProductId}");
-        
-        // All logs in this block include ProductId in addition to the parent context
-    }
-
-    // Option 2: Use PushProperties helper (same effect)
-    using (LoggingScopeExtensions.PushProperties(("ProductId", productId)))
-    {
-        // ...
-    }
+    _logger.LogInformation(CommonLogEvents.Operation.Started, "Checking inventory", context: null);
 }
 ```
-
-#### Merging explicit and ambient contexts
-
-If you pass an explicit context to a logging method while an ambient context is active, the two are merged (explicit overrides ambient):
-
-```csharp
-var extraContext = LoggingContextBuilder
-    .Create()
-    .With("PaymentMethod", "CreditCard")
-    .Build();
-
-// This merges the ambient context with extraContext
-_logger.Log(extraContext)
-    .Information()
-    .Message("Processing payment")
-    .Write();
-```
-
-#### Backward compatibility
-
-If no scope is active, logging works exactly as before. The ambient context feature is fully opt-in and backward compatible.
 
 ---
 
@@ -485,20 +359,19 @@ If no scope is active, logging works exactly as before. The ambient context feat
 
 ### 4.1 State Object and Structured Logging
 
-Both `LogEntryBuilder` and `LoggerExtensions` build a `Dictionary<string, object?>` as the logging state containing:
+NoNameLogger builds a `Dictionary<string, object?>` as the logging state containing:
 
-* Context properties
-* Additional properties
-* Message template under `{OriginalFormat}` key
-* Optional message arguments array
+- Context properties
+- Additional properties
+- Message template under `{OriginalFormat}`
 
-All logging goes through the standard `ILogger.Log` method. Providers like Serilog recognize `{OriginalFormat}` and the state dictionary to produce structured logs.
+Providers like Serilog recognize `{OriginalFormat}` and the state dictionary to produce structured logs.
 
 ### 4.2 Performance Considerations
 
-* `LoggingContext` is immutable and uses `FrozenDictionary` for thread-safety and performance
-* Builders are short-lived and stack-allocated
-* Minimal runtime overhead while providing a rich API
+- `LoggingContext` is immutable and uses `FrozenDictionary` for thread-safety and performance
+- Builders are short-lived
+- Minimal runtime overhead while providing a rich API
 
 ---
 
@@ -507,8 +380,6 @@ All logging goes through the standard `ILogger.Log` method. Providers like Seril
 NoNameLogger is intentionally domain-agnostic. Common extension patterns:
 
 ### 5.1 Project-Specific Context Helpers
-
-Create static helpers that wrap `LoggingContextBuilder` for your domain:
 
 ```csharp
 public static class BookingContextBuilder
@@ -527,8 +398,6 @@ public static class BookingContextBuilder
 
 ### 5.2 Project-Specific Events and Messages
 
-Define custom event and message sets:
-
 ```csharp
 public static class BookingLogEvents
 {
@@ -543,28 +412,17 @@ public static class BookingLogMessages
 }
 ```
 
-Use them with the standard APIs:
-
-```csharp
-_logger.LogInformation(
-    BookingLogEvents.BookingCreated,
-    BookingLogMessages.BookingCreated,
-    context: context);
-```
-
 ### 5.3 Custom Wrappers
 
-Create wrapper methods for repeated patterns (e.g., API endpoints, background jobs) that prefill context, events, or messages.
+Create wrappers for repeated patterns (API endpoints, background jobs, etc.) that prefill context, events, or messages.
 
 ---
 
 ## 6. Integration with Serilog
 
-When using Serilog as the provider for `ILogger`, the state dictionary and `{OriginalFormat}` are automatically recognized. All context and extra properties become structured properties in Serilog.
+When using Serilog as the provider for `ILogger`, the state dictionary and `{OriginalFormat}` are recognized automatically.
 
 ### 6.1 Basic Setup
-
-No special integration is required. Register Serilog as usual and use NoNameLogger helpers:
 
 ```csharp
 _logger.Log(context)
@@ -577,118 +435,76 @@ _logger.Log(context)
        .Write();
 ```
 
-This produces a structured Serilog event with properties from the context and additional properties.
-
 ### 6.2 Using Enrichers
 
-To automatically include ambient context properties in all log events, register `LoggingScopeEnricher`:
+To automatically include ambient context properties in all log events:
 
 ```csharp
 Log.Logger = new LoggerConfiguration()
     .Enrich.With<LoggingScopeEnricher>()
-    .Enrich.With<ConsolePropertyFilterEnricher>() // Optional: filter console output
+    .Enrich.With<ConsolePropertyFilterEnricher>()
     .WriteTo.Console()
     .CreateLogger();
 ```
-
-The `LoggingScopeEnricher` automatically enriches all log events with properties from the current `LoggingScope`, eliminating the need to pass context explicitly to every logging call.
 
 ---
 
 ## 7. Best Practices
 
-* **Consistent Context Usage**: Define a minimal set of standard properties (environment, application, user, correlation ID) and include them consistently across all logging calls.
-
-* **Centralized Events and Messages**: Use `CommonLogEvents` and `CommonLogMessages` or define your own equivalents. Avoid hardcoding event IDs and templates throughout the codebase.
-
-* **Selective Property Addition**: Add only properties that provide value for debugging or analytics. Avoid cluttering logs with unnecessary data.
-
-* **Timed Operations**: Wrap business-critical flows in `TimedLogOperation` to automatically capture timing metrics.
-
-* **Domain-Specific Extensions**: Keep the framework domain-agnostic. Add domain-specific helpers in your application projects, not in the core library.
+- Keep context keys consistent (use `LoggingContextKeys` where possible)
+- Centralize events and message templates (avoid scattering `EventId` and templates)
+- Add properties intentionally (prioritize diagnostics value)
+- Wrap critical flows in `TimedLogOperation`
+- Keep domain-specific helpers in application projects, not in the core library
 
 ---
 
 ## 8. Troubleshooting
 
-* **Context properties not appearing in logs**
+### Context properties not appearing in logs
 
-  * Ensure `ILoggingContext` is passed to logging methods: `logger.Log(context)...` or `logger.LogInformation(..., context: context, ...)`
-  * If using ambient context, verify `LoggingScope.Begin(context)` is called and the scope is active
-  * When using Serilog, register `LoggingScopeEnricher` to automatically include ambient context
+- Ensure you pass context: `logger.Log(context)...` or `LogInformation(..., context: context, ...)`
+- If using ambient context, ensure `LoggingScope.Begin(context)` is active
+- For Serilog, use `LoggingScopeEnricher` to enrich ambient context properties
 
-* **Empty message text**
+### Empty message text
 
-  * Verify `.Message(...)` is called before `.Write()` in the fluent API
-  * If `.Message(...)` is omitted, `LogEntryBuilder` generates a default message based on `EventId`
-
-* **Compiler errors**
-
-  * Ensure your project targets .NET 6.0 or later
-  * Verify all required NuGet packages are installed
+- Ensure `.Message(...)` is called before `.Write()`
 
 ---
 
 ## 9. Contributing
 
-We welcome contributions! Please follow these guidelines when submitting changes.
+Contributions are welcome.
 
 ### Commit Message Format
 
-All commit messages must follow the conventional commits format:
+Use Conventional Commits:
 
 ```
 <type>(<scope>): <description>
 ```
 
-#### Commit Types
-
-* **`feat()`**: New features or functionality
-  * Example: `feat(logging): add ambient context support via LoggingScope`
-
-* **`fix()`**: Bug fixes
-  * Example: `fix(builder): correct context merging when explicit context is null`
-
-* **`refactor()`**: Code refactoring without changing functionality
-  * Example: `refactor(core): simplify LogEntryBuilder state construction`
-
-* **`performance()`**: Performance improvements
-  * Example: `performance(context): use FrozenDictionary for better lookup performance`
-
-* **`chore()`**: Maintenance tasks, dependencies, build configuration
-  * Example: `chore(deps): update Microsoft.Extensions.Logging to 9.0.0`
-
-#### Scope (Optional)
-
-The scope should indicate the area of the codebase affected:
-- `logging`, `context`, `builder`, `enricher`, `core`, `conventions`, `samples`, `deps`, `docs`, etc.
-
-#### Description
-
-- Use imperative mood ("add" not "added" or "adds")
-- Keep it concise but descriptive
-- Reference issues/PRs if applicable
-
-#### Examples
+Examples:
 
 ```
 feat(enricher): add LoggingScopeEnricher for automatic context enrichment
 fix(context): handle null context in GetEffectiveContext
 refactor(core): extract state building logic to separate method
-performance(context): optimize property lookup with FrozenDictionary
-chore(docs): update README with enricher documentation
+chore(docs): update README with demo usage
 ```
 
 ---
 
 ## 10. Summary
 
-NoNameLogger enhances your existing logging infrastructure by providing:
+NoNameLogger enhances `Microsoft.Extensions.Logging` by providing:
 
-* A fluent API for building structured log entries
-* Immutable logging context abstraction for consistent property management
-* Centralized event IDs and message templates
-* Ambient context support via `LoggingScope`
-* Integration with Serilog through custom enrichers
+- Fluent structured logging via `LogEntryBuilder`
+- Immutable `ILoggingContext` for consistent properties
+- Centralized `EventId` sets and message templates
+- Ambient context support via `LoggingScope`
+- Optional Serilog enrichers for automatic context enrichment
 
-Drop it into any .NET application using `Microsoft.Extensions.Logging` to improve logging structure, consistency, and maintainability.
+Drop it into any .NET application using `ILogger` to improve logging structure, consistency, and maintainability.
+

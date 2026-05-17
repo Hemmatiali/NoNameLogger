@@ -16,7 +16,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\NoNameLogger\NoNameLogger.csproj" />
+		<ProjectReference Include="..\..\src\NoNameLogger\NoNameLogger.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
