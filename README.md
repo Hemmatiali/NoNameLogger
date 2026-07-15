@@ -202,7 +202,7 @@ Runnables live in `samples/NoNameLogger.Demo`.
 
 ## 2. Requirements
 
-- **.NET**: .NET 8.0 or .NET 9.0 (multi-targeted)
+- **.NET**: .NET 8.0, .NET 9.0, or .NET 10.0 (multi-targeted)
 - **Dependencies**:
   - `Microsoft.Extensions.Logging.Abstractions` (9.0.0)
   - `Serilog` (4.2.0) — required by the built-in enrichers
