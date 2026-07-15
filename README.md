@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Hemmatiali/NoNameLogger/main/assets/logo.png" alt="NoNameLogger" width="256" />
+</p>
+
 # NoNameLogger
 
 Lightweight, framework-agnostic logging helpers on top of `Microsoft.Extensions.Logging`.
