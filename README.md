@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Hemmatiali/NoNameLogger/main/assets/logo.png" alt="NoNameLogger" width="256" />
+  <img src="assets/logo.png" alt="NoNameLogger" width="256" />
 </p>
 
 # NoNameLogger
