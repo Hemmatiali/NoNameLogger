@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="NoNameLogger" width="256" />
+</p>
+
 # NoNameLogger
 
 Lightweight, framework-agnostic logging helpers on top of `Microsoft.Extensions.Logging`.
@@ -57,28 +61,30 @@ The library is organized into a few small namespaces and files:
 
 ```text
 src/NoNameLogger
-├─ Abstractions
-│  └─ ILoggingContext.cs
-│
-├─ Context
-│  ├─ LoggingContext.cs
-│  ├─ LoggingContextBuilder.cs
-│  ├─ LoggingContextKeys.cs
-│  ├─ LoggingScope.cs
-│  └─ LoggingScopeExtensions.cs
-│
-├─ Core
-│  ├─ LogEntryBuilder.cs
-│  ├─ LoggerExtensions.cs
-│  └─ TimedLogOperation.cs
-│
-├─ Conventions
-│  ├─ CommonLogEvents.cs
-│  └─ CommonLogMessages.cs
-│
-└─ Enricher
-   ├─ ConsolePropertyFilterEnricher.cs
-   └─ LoggingScopeEnricher.cs
+└─ Application
+   ├─ Logging
+   │  ├─ Abstractions
+   │  │  └─ ILoggingContext.cs
+   │  │
+   │  ├─ Context
+   │  │  ├─ LoggingContext.cs
+   │  │  ├─ LoggingContextBuilder.cs
+   │  │  ├─ LoggingContextKeys.cs
+   │  │  ├─ LoggingScope.cs
+   │  │  └─ LoggingScopeExtensions.cs
+   │  │
+   │  ├─ Core
+   │  │  ├─ LogEntryBuilder.cs
+   │  │  ├─ LoggerExtensions.cs
+   │  │  └─ TimedLogOperation.cs
+   │  │
+   │  └─ Conventions
+   │     ├─ CommonLogEvents.cs
+   │     └─ CommonLogMessages.cs
+   │
+   └─ Enricher
+      ├─ ConsolePropertyFilterEnricher.cs
+      └─ LoggingScopeEnricher.cs
 
 samples/NoNameLogger.Demo
 └─ Demonstrates basic usage patterns (console app)
@@ -161,11 +167,15 @@ samples/NoNameLogger.Demo
 
 - **`CommonLogEvents`**
   - Generic `EventId` sets grouped by category:
-    - `System`, `Http`, `Database`, `Operation`, `Cache`, `Security`, `Business`
+    - `System`, `Http`, `Database`, `Operation`, `Cache`, `Security`, `Business`,
+      `FileSystem`, `Integration`, `Payload`, `Jobs`
+  - Each category exposes several ready-made `EventId` values (see the source for the full list).
   - You can use them as-is or define your own equivalents.
 
 - **`CommonLogMessages`**
-  - Generic message templates matching the events above.
+  - Generic message templates for the most common events above
+    (`System`, `Http`, `Database`, `Operation`, `Cache`, `Security`, `Business`).
+  - Not every `EventId` has a matching template — use the ones provided, or supply your own message string to any log call.
   - Example:
 
     ```csharp
@@ -200,8 +210,10 @@ Runnables live in `samples/NoNameLogger.Demo`.
 
 ## 2. Requirements
 
-- **.NET**: .NET 6.0 or later
-- **Dependency**: `Microsoft.Extensions.Logging.Abstractions`
+- **.NET**: .NET 8.0, .NET 9.0, or .NET 10.0 (multi-targeted)
+- **Dependencies**:
+  - `Microsoft.Extensions.Logging.Abstractions` (9.0.0)
+  - `Serilog` (4.2.0) — required by the built-in enrichers
 - **Providers**: Works with any provider that integrates with `ILogger` (Serilog, NLog, Seq, Application Insights, etc.)
 
 NoNameLogger extends `ILogger` without replacing your existing logging infrastructure.
@@ -440,12 +452,18 @@ _logger.Log(context)
 To automatically include ambient context properties in all log events:
 
 ```csharp
+using NoNameLogger.Application.Enricher;
+
 Log.Logger = new LoggerConfiguration()
     .Enrich.With<LoggingScopeEnricher>()
     .Enrich.With<ConsolePropertyFilterEnricher>()
     .WriteTo.Console()
     .CreateLogger();
 ```
+
+> The enrichers live in the `NoNameLogger.Application.Enricher` namespace (separate from the namespaces in §3.1).
+> The `.WriteTo.Console()` sink shown here requires the **`Serilog.Sinks.Console`** package, which is not a
+> NoNameLogger dependency — add it (and any other sinks you use) to your application project.
 
 ---
 
