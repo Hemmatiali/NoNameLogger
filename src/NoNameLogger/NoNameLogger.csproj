@@ -7,9 +7,7 @@
 
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	<PackageVersion>1.0.0</PackageVersion>
-	<PackageReleaseNotes>Initial public release.</PackageReleaseNotes>
+    <PackageReleaseNotes>Initial public release.</PackageReleaseNotes>
 
     <!-- Package metadata -->
     <PackageId>NoNameLogger</PackageId>
@@ -18,14 +16,27 @@
     <Description>Structured logging helpers and conventions for .NET applications.</Description>
     <PackageTags>logging;serilog;dotnet;structured-logging;observability</PackageTags>
     <RepositoryUrl>https://github.com/Hemmatiali/NoNameLogger</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Hemmatiali/NoNameLogger</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+
+    <!-- Build quality: reproducible, debuggable packages -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageReference Include="Serilog" Version="4.2.0" />
+
+    <!-- SourceLink: links package symbols back to source on GitHub -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- Include README and icon in the NuGet package -->

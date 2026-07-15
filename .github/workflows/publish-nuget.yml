@@ -1,0 +1,62 @@
+name: Publish NuGet
+
+# Publishes the package when a version tag (e.g. v1.2.3) is pushed.
+# The tag name (minus the leading "v") becomes the package version.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for OIDC / NuGet Trusted Publishing
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so SourceLink can resolve commits
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Derive version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore src/NoNameLogger/NoNameLogger.csproj
+
+      - name: Test
+        run: dotnet test tests/NoNameLogger.Tests/NoNameLogger.Tests.csproj -c Release
+
+      - name: Pack
+        run: >-
+          dotnet pack src/NoNameLogger/NoNameLogger.csproj
+          -c Release
+          -p:Version=${{ steps.version.outputs.version }}
+          -o artifacts
+
+      # Exchanges the GitHub OIDC token for a short-lived nuget.org API key.
+      # Requires a Trusted Publishing policy configured on nuget.org for this repo/workflow.
+      # Replace <NUGET_ORG_USERNAME> with your nuget.org account username.
+      - name: NuGet login (Trusted Publishing)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: hematiali
+
+      - name: Push to NuGet
+        run: >-
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
