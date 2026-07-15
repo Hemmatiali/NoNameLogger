@@ -57,28 +57,30 @@ The library is organized into a few small namespaces and files:
 
 ```text
 src/NoNameLogger
-├─ Abstractions
-│  └─ ILoggingContext.cs
-│
-├─ Context
-│  ├─ LoggingContext.cs
-│  ├─ LoggingContextBuilder.cs
-│  ├─ LoggingContextKeys.cs
-│  ├─ LoggingScope.cs
-│  └─ LoggingScopeExtensions.cs
-│
-├─ Core
-│  ├─ LogEntryBuilder.cs
-│  ├─ LoggerExtensions.cs
-│  └─ TimedLogOperation.cs
-│
-├─ Conventions
-│  ├─ CommonLogEvents.cs
-│  └─ CommonLogMessages.cs
-│
-└─ Enricher
-   ├─ ConsolePropertyFilterEnricher.cs
-   └─ LoggingScopeEnricher.cs
+└─ Application
+   ├─ Logging
+   │  ├─ Abstractions
+   │  │  └─ ILoggingContext.cs
+   │  │
+   │  ├─ Context
+   │  │  ├─ LoggingContext.cs
+   │  │  ├─ LoggingContextBuilder.cs
+   │  │  ├─ LoggingContextKeys.cs
+   │  │  ├─ LoggingScope.cs
+   │  │  └─ LoggingScopeExtensions.cs
+   │  │
+   │  ├─ Core
+   │  │  ├─ LogEntryBuilder.cs
+   │  │  ├─ LoggerExtensions.cs
+   │  │  └─ TimedLogOperation.cs
+   │  │
+   │  └─ Conventions
+   │     ├─ CommonLogEvents.cs
+   │     └─ CommonLogMessages.cs
+   │
+   └─ Enricher
+      ├─ ConsolePropertyFilterEnricher.cs
+      └─ LoggingScopeEnricher.cs
 
 samples/NoNameLogger.Demo
 └─ Demonstrates basic usage patterns (console app)
@@ -200,8 +202,10 @@ Runnables live in `samples/NoNameLogger.Demo`.
 
 ## 2. Requirements
 
-- **.NET**: .NET 6.0 or later
-- **Dependency**: `Microsoft.Extensions.Logging.Abstractions`
+- **.NET**: .NET 8.0 or .NET 9.0 (multi-targeted)
+- **Dependencies**:
+  - `Microsoft.Extensions.Logging.Abstractions` (9.0.0)
+  - `Serilog` (4.2.0) — required by the built-in enrichers
 - **Providers**: Works with any provider that integrates with `ILogger` (Serilog, NLog, Seq, Application Insights, etc.)
 
 NoNameLogger extends `ILogger` without replacing your existing logging infrastructure.
