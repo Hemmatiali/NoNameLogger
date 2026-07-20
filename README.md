@@ -2,6 +2,10 @@
   <img src="https://raw.githubusercontent.com/Hemmatiali/NoNameLogger/main/assets/logo.png" alt="NoNameLogger" width="256" />
 </p>
 
+<p align="center">
+  <a href="https://www.nuget.org/packages/NoNameLogger/"><img src="https://img.shields.io/nuget/v/NoNameLogger.svg" alt="NuGet" /></a>
+</p>
+
 # NoNameLogger
 
 Lightweight, framework-agnostic logging helpers on top of `Microsoft.Extensions.Logging`.
